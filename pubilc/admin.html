@@ -1,1 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AAGAM – Groceries in Minutes (Admin + Auto Discount + Search)</title>
 
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body { background:#f8f9fa; font-family:system-ui, sans-serif; }
+    .header {
+      background:white;
+      padding:12px 20px;
+      box-shadow:0 2px 10px rgba(0,0,0,0.05);
+      position:sticky;
+      top:0;
+      z-index:1000;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .logo-container {
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+    .logo-img {
+      width:70px;           /* As per your request */
+      height:auto;
+    }
+    nav a {
+      margin-left:24px;
+      font-weight:600;
+      color:#424242;
+      text-decoration:none;
+    }
+    nav a.active { color:#0a7cff; border-bottom:3px solid #0a7cff; }
+
+    .admin-container { max-width:1400px; margin:30px auto; padding:0 15px; }
+
+    .accordion-button:not(.collapsed) { background-color:#e7f1ff; color:#0a7cff; }
+    .accordion-button:focus { box-shadow:0 0 0 0.25rem rgba(10,124,255,.25); }
+
+    .product-card {
+      border:none;
+      border-radius:12px;
+      overflow:hidden;
+      box-shadow:0 4px 16px rgba(0,0,0,0.08);
+      transition:transform 0.2s;
+    }
+    .product-card:hover { transform:translateY(-4px); }
+    .product-card img { height:160px; object-fit:cover; }
+
+    .btn-primary { background:#0a7cff; border:none; }
+    .btn-danger { background:#e53935; border:none; }
+
+    .discount-preview {
+      font-size:0.9rem;
+      color:#28a745;
+      margin-top:4px;
+      min-height:1.2em;
+    }
+
+    .no-results {
+      text-align:center;
+      color:#6c757d;
+      padding:40px 0;
+      font-style:italic;
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo-container">
+    <!-- Your custom AAGAM Logo -->
+    <img src="https://raw.githubusercontent.com/chavitinibalaji/aagam-assets/main/IMG_AAGAM.png" 
+         alt="AAGAM Logo" class="logo-img">
+  </div>
+
+  <nav>
+    <a href="#" data-page="shop">Shop</a>
+    <a href="#" data-page="cart">Cart (<span id="cartCount">0</span>)</a>
+    <a href="#" data-page="orders">Orders</a>
+    <a href="#" data-page="admin" class="active">Admin</a>
+  </nav>
+</header>
+
+<div class="admin-container">
+
+  <div id="admin" class="page">
+    <h2 class="mb-4 text-center fw-bold">Admin Dashboard</h2>
+
+    <div class="accordion" id="adminAccordion">
+
+      <!-- Add New Product -->
+      <div class="accordion-item">
+        <h2 class="accordion-header">
+          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#addProductPanel">
+            Add New Product
+          </button>
+        </h2>
+        <div id="addProductPanel" class="accordion-collapse collapse show">
+          <div class="accordion-body">
+            <form id="addProductForm">
+              <div class="mb-3">
+                <label class="form-label fw-bold">Product Name</label>
+                <input type="text" class="form-control" id="pName" placeholder="e.g. Aashirvaad Atta" required>
+              </div>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Selling Price (₹)</label>
+                  <input type="number" step="0.01" class="form-control" id="pPrice" placeholder="185" required>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">MRP (₹)</label>
+                  <input type="number" step="0.01" class="form-control" id="pMrp" placeholder="220" required>
+                </div>
+              </div>
+
+              <!-- Auto discount preview -->
+              <div class="mt-2">
+                <small class="discount-preview" id="discountPreview">Discount will be calculated automatically...</small>
+              </div>
+
+              <div class="mb-3 mt-3">
+                <label class="form-label fw-bold">Weight / Size</label>
+                <input type="text" class="form-control" id="pWeight" placeholder="5 kg" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold">Image URL</label>
+                <input type="url" class="form-control" id="pImg" placeholder="https://images.unsplash.com/..." required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold">Category</label>
+                <select class="form-select" id="pCat" required>
+                  <option value="">Select Category</option>
+                  <option value="grocery">Grocery</option>
+                  <option value="fruit">Fruits</option>
+                  <option value="veg">Vegetables</option>
+                  <option value="dairy">Dairy</option>
+                  <option value="snack">Snacks</option>
+                  <option value="beauty">Beauty</option>
+                  <option value="toys">Toys</option>
+                  <option value="student">Student needs</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold">Brand (optional)</label>
+                <input type="text" class="form-control" id="pBrand" placeholder="e.g. Aashirvaad">
+              </div>
+              <button type="button" class="btn btn-primary btn-lg w-100" onclick="addProduct()">
+                Add Product
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Manage Products with Search -->
+      <div class="accordion-item">
+        <h2 class="accordion-header">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#manageProducts">
+            Manage All Products
+          </button>
+        </h2>
+        <div id="manageProducts" class="accordion-collapse collapse">
+          <div class="accordion-body">
+            <div class="mb-4">
+              <input type="text" class="form-control form-control-lg" id="productSearch" 
+                     placeholder="Search products by name...">
+            </div>
+
+            <div class="row g-4" id="adminProductsGrid"></div>
+            <div id="noProductsFound" class="no-results" style="display:none;">
+              No products found matching your search
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+// Storage helpers
+const get = key => JSON.parse(localStorage.getItem(key)) || [];
+const save = (key, data) => localStorage.setItem(key, JSON.stringify(data));
+
+// Products
+let products = get('products');
+if (products.length === 0) {
+  products = [
+    { name: "Aashirvaad Atta", price: "185", mrp: "220", off: "₹35 OFF", weight: "5 kg", image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800", category: "grocery", brand: "Aashirvaad" },
+    { name: "Fortune Sunflower Oil", price: "120", mrp: "150", off: "₹30 OFF", weight: "1 L", image: "https://images.unsplash.com/photo-1625772299848-361b8037d1a9?w=800", category: "grocery", brand: "Fortune" }
+  ];
+  save('products', products);
+}
+
+// Navigation
+document.querySelectorAll('nav a').forEach(a => {
+  a.onclick = e => {
+    e.preventDefault();
+    document.querySelectorAll('nav a').forEach(x => x.classList.remove('active'));
+    a.classList.add('active');
+
+    document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+    document.getElementById(a.dataset.page).classList.remove('hidden');
+
+    if (a.dataset.page === 'admin') {
+      renderProducts();
+    }
+  };
+});
+
+// Auto-calculate discount
+const pPriceInput = document.getElementById('pPrice');
+const pMrpInput = document.getElementById('pMrp');
+const discountPreview = document.getElementById('discountPreview');
+
+function calculateDiscount() {
+  const price = parseFloat(pPriceInput.value) || 0;
+  const mrp = parseFloat(pMrpInput.value) || 0;
+
+  if (price > 0 && mrp > 0 && mrp > price) {
+    const discountAmount = Math.round(mrp - price);
+    const discountPercent = Math.round((discountAmount / mrp) * 100);
+    discountPreview.textContent = `₹${discountAmount} OFF (${discountPercent}% off)`;
+  } else {
+    discountPreview.textContent = 'Discount will be calculated automatically...';
+  }
+}
+
+pPriceInput.addEventListener('input', calculateDiscount);
+pMrpInput.addEventListener('input', calculateDiscount);
+
+// Add Product
+function addProduct() {
+  const name = document.getElementById('pName').value.trim();
+  const price = document.getElementById('pPrice').value.trim();
+  const mrp = document.getElementById('pMrp').value.trim();
+  const off = discountPreview.textContent.includes('OFF') ? discountPreview.textContent : '';
+  const weight = document.getElementById('pWeight').value.trim();
+  const image = document.getElementById('pImg').value.trim();
+  const category = document.getElementById('pCat').value;
+  const brand = document.getElementById('pBrand').value.trim() || "Unknown";
+
+  if (!name || !price || !mrp || !weight || !image || !category) {
+    alert('Please fill all required fields!');
+    return;
+  }
+
+  products.push({ name, price, mrp, off, weight, image, category, brand });
+  save('products', products);
+
+  // Clear form
+  document.getElementById('pName').value = '';
+  document.getElementById('pPrice').value = '';
+  document.getElementById('pMrp').value = '';
+  document.getElementById('pWeight').value = '';
+  document.getElementById('pImg').value = '';
+  document.getElementById('pCat').value = '';
+  document.getElementById('pBrand').value = '';
+  discountPreview.textContent = 'Discount will be calculated automatically...';
+
+  renderProducts();
+  alert('Product added successfully!');
+}
+
+// Delete Product
+function deleteProduct(index) {
+  if (confirm('Delete this product?')) {
+    products.splice(index, 1);
+    save('products', products);
+    renderProducts();
+  }
+}
+
+// Render Products with Search Filter
+function renderProducts(filter = '') {
+  const grid = document.getElementById('adminProductsGrid');
+  const noResults = document.getElementById('noProductsFound');
+  grid.innerHTML = '';
+
+  const filtered = products.filter(p => 
+    p.name.toLowerCase().includes(filter.toLowerCase())
+  );
+
+  if (filtered.length === 0) {
+    noResults.style.display = 'block';
+  } else {
+    noResults.style.display = 'none';
+    filtered.forEach((p, index) => {
+      const originalIndex = products.indexOf(p);
+      grid.innerHTML += `
+        <div class="col-6 col-md-4 col-lg-3">
+          <div class="product-card">
+            <img src="${p.image}" alt="${p.name}">
+            <div class="p-3">
+              <h6 class="mb-1">${p.name}</h6>
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="text-primary fw-bold">₹${p.price}</span>
+                ${p.mrp ? `<span class="text-muted text-decoration-line-through">₹${p.mrp}</span>` : ''}
+                ${p.off ? `<span class="badge bg-success">${p.off}</span>` : ''}
+              </div>
+              <div class="text-muted small mt-1">${p.weight} • ${p.brand}</div>
+              <button class="btn btn-sm btn-danger mt-2 w-100" onclick="deleteProduct(${originalIndex})">
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>`;
+    });
+  }
+}
+
+// Search Listener
+document.getElementById('productSearch')?.addEventListener('input', (e) => {
+  renderProducts(e.target.value);
+});
+
+// Initial Load
+renderProducts();
+</script>
+</body>
+</html>
