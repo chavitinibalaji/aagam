@@ -213,12 +213,26 @@ body{background:#f6f7fb;color:#111}
   font-size:12px;
   color:#888;
 }
+/* Location Modal Styles */
+.location-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:1000}
+.location-modal{background:#fff;width:90%;max-width:400px;border-radius:16px;padding:24px;text-align:center}
+.detect-btn{width:100%;padding:14px;background:#f0f9ff;color:#0066cc;border:1px solid #b3d4fc;border-radius:50px;font-weight:600;margin:12px 0;cursor:pointer}
 </style>
 </head>
 <body>
 
 <div class="header">
   <div class="logo">AAGAM</div>
+  <!-- Clickable Location Picker -->
+  <div class="location-picker" onclick="openLocationModal()">
+    <span style="font-size:18px;">📍</span>
+    <div>
+      <small style="color:#666;">Deliver to</small><br>
+      <strong id="currentLocationDisplay">Anakapalli</strong>
+    </div>
+    <span style="font-size:12px;color:#666;">▼</span>
+  </div>
+  
   <div class="search">🔍 <input id="searchInput" onkeyup="handleSearch()" placeholder="Search products..."></div>
   <div class="header-icons">
     <div onclick="openProfile()">👤</div>
@@ -262,6 +276,24 @@ body{background:#f6f7fb;color:#111}
 <!-- No Results Message -->
 <div id="noResults" class="no-results" style="display:none;">
   No products found matching "<strong id="searchTerm"></strong>"
+</div>
+
+<!-- Your Location Modal (exactly as you provided - no changes) -->
+<div class="location-overlay" id="locationOverlay" onclick="closeLocationModal()">
+  <div class="location-modal" onclick="event.stopPropagation()">
+    <h3 style="margin-bottom:16px;">Select Delivery Location</h3>
+  
+    <button class="detect-btn" onclick="detectMyLocation()">
+      📍 Detect My Location
+    </button>
+    <div style="margin:20px 0; color:#666;">OR</div>
+    <input type="text" id="pincodeInput" placeholder="Enter Pincode or Area (e.g. 530013)"
+           style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px;">
+  
+    <button onclick="saveLocation()" style="margin-top:20px; width:100%; padding:14px; background:#00b761; color:white; border:none; border-radius:50px; font-weight:700; font-size:16px;">
+      Confirm Location
+    </button>
+  </div>
 </div>
 
 <!-- Details Modal - Updated to match Zepto style -->
@@ -679,6 +711,36 @@ document.querySelector('.banner-carousel').addEventListener('mouseleave', () => 
 updateDots();
 renderSections();
 renderCart();
+// Location functions (added - required for your modal)
+function openLocationModal() {
+  document.getElementById('locationOverlay').style.display = 'flex';
+}
+function closeLocationModal() {
+  document.getElementById('locationOverlay').style.display = 'none';
+}
+function detectMyLocation() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      () => {
+        document.getElementById('currentLocationDisplay').textContent = "Near You";
+        closeLocationModal();
+      },
+      () => alert("Location access denied. Please enter manually.")
+    );
+  } else {
+    alert("Geolocation not supported.");
+  }
+}
+function saveLocation() {
+  const input = document.getElementById('pincodeInput').value.trim();
+  if (input.length < 3) {
+    alert("Please enter valid pincode or area");
+    return;
+  }
+  document.getElementById('currentLocationDisplay').textContent = input;
+  closeLocationModal();
+}
+
 </script>
 </body>
 </html>
